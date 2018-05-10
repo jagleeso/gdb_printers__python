@@ -18,6 +18,7 @@
 import gdb
 import gdb.xmethod
 import re
+import pprint
 
 matcher_name_prefix = 'libstdc++::'
 
@@ -586,9 +587,21 @@ class UniquePtrGetWorker(gdb.xmethod.XMethodWorker):
 
     def __call__(self, obj):
         impl_type = obj.dereference().type.fields()[0].type.tag
+        if impl_type is None:
+            impl_type = obj.dereference().type.fields()[0].type.keys()[0]
+            if impl_type is None:
+                return None
+        # if impl_type is None:
+        #     print("> impl_type = {impl_type}".format(impl_type=impl_type))
+        #     import rpdb; rpdb.set_trace()
+        #     return None
         if re.match('^std::(__\d+::)?__uniq_ptr_impl<.*>$', impl_type): # New implementation
             return obj['_M_t']['_M_t']['_M_head_impl']
         elif re.match('^std::(__\d+::)?tuple<.*>$', impl_type):
+            return obj['_M_t']['_M_head_impl']
+        elif re.match('^std::(__\d+::)?tuple<.*>$', impl_type):
+            return obj['_M_t']['_M_head_impl']
+        elif re.search(r'^std::_Tuple_impl<.*>$', impl_type):
             return obj['_M_t']['_M_head_impl']
         return None
 

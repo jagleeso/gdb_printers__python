@@ -102,11 +102,11 @@ def find_type(orig, name):
 _versioned_namespace = '__8::'
 
 # Test if a type is a given template instantiation.
-def is_specialization_of(type, template_name):
+def is_specialization_of(type_str, template_name):
     global _versioned_namespace
     if _versioned_namespace:
-        return re.match('^std::(%s)?%s<.*>$' % (_versioned_namespace, template_name), type) is not None
-    return re.match('^std::%s<.*>$' % template_name, type) is not None
+        return re.match('^std::(%s)?%s<.*>$' % (_versioned_namespace, template_name), type_str) is not None
+    return re.match('^std::%s<.*>$' % template_name, type_str) is not None
 
 def strip_versioned_namespace(typename):
     global _versioned_namespace
@@ -141,9 +141,16 @@ class UniquePointerPrinter:
 
     def to_string (self):
         impl_type = self.val.type.fields()[0].type.tag
+        if impl_type is None:
+            # impl_type = obj.dereference().type.fields()[0].type.keys()[0]
+            impl_type = self.val.type.fields()[0].type.keys()[0]
+            if impl_type is None:
+                return None
         if is_specialization_of(impl_type, '__uniq_ptr_impl'): # New implementation
             v = self.val['_M_t']['_M_t']['_M_head_impl']
         elif is_specialization_of(impl_type, 'tuple'):
+            v = self.val['_M_t']['_M_head_impl']
+        elif is_specialization_of(impl_type, '_Tuple_impl'):
             v = self.val['_M_t']['_M_head_impl']
         else:
             raise ValueError("Unsupported implementation for unique_ptr: %s" % self.val.type.fields()[0].type.tag)
